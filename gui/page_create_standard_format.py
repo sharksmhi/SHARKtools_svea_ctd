@@ -370,6 +370,7 @@ class PageCreateStandardFormat(tk.Frame):
         self.strvar_cnv_directory.set(directory)
         self.cnv_files_selection_widget.update_items(items)
         self.cnv_files_selection_widget.move_items_to_selected(items)
+        self.logger.info('CNV files loaded')
 
     def _callback_create_metadata_file(self, *args, **kwargs):
         try:
