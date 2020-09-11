@@ -14,4 +14,5 @@ INFO = dict(title='Svea CTD',
                        ],
             user_page_class='PageUser')  # Must match name in ALL_PAGES in main app
 
-USER_SETTINGS = [('basic', 'directory')]
+USER_SETTINGS = [('basic', 'directory'),
+                 ('basic', 'create_options')]
