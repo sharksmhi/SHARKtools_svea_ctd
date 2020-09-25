@@ -22,7 +22,7 @@ from ctdpy.core.utils import generate_filepaths
 from pathlib import Path
 
 
-class PageCreateStandardFormat(tk.Frame):
+class PageAdvanced(tk.Frame):
 
     def __init__(self, parent, parent_app, **kwargs):
         tk.Frame.__init__(self, parent, **kwargs)
@@ -265,7 +265,6 @@ class PageCreateStandardFormat(tk.Frame):
             return True
         return False
 
-
     @staticmethod
     def directory_exists(directory):
         return Path(directory).exists()
@@ -438,7 +437,7 @@ class PageCreateStandardFormat(tk.Frame):
             overwrite = self.boolean_overwrite_metadata.get()
             self.logger.debug(f'Overwrite metadata is set to {overwrite}')
             session.update_metadata(datasets=datasets[0], metadata=metadata, overwrite=overwrite)
-            self.logger.debug('Metadata updated in datasets')
+            self.logger.debug('Metadata updated in dataset')
 
             # Save data
             self._create_working_directory(working_directory)
@@ -471,7 +470,6 @@ class PageCreateStandardFormat(tk.Frame):
             main_gui.show_error('Internal error', e)
 
         self._update_working_directory_information()
-
 
     def startup(self):
         self.manual_metadata_items = ['WINDIR', 'WINSP', 'AIRTEMP', 'AIRPRES', 'WEATH', 'CLOUD', 'WAVES', 'ICEOB']

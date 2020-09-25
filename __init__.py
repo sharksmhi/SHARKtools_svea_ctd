@@ -9,10 +9,14 @@ INFO = dict(title='Svea CTD',
             users_directory='users',
             sub_pages=[dict(name='PageStart',
                             title='Start'),
-                       dict(name='PageCreateStandardFormat',
-                            title='Create standard format')
+                       dict(name='PageBasic',
+                            title='Svea CTD (enkel)'),
+                       dict(name='PageAdvanced',
+                            title='Svea CTD (avancerad)')
                        ],
             user_page_class='PageUser')  # Must match name in ALL_PAGES in main app
 
 USER_SETTINGS = [('basic', 'directory'),
-                 ('basic', 'create_options')]
+                 ('basic', 'create_options'),
+                 ('basic', 'basic_options'),
+                 ('basic', 'basic_dirs')]

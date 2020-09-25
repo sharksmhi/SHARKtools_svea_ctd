@@ -6,6 +6,7 @@
 
 from .page_user import PageUser
 from .page_start import PageStart
-from .page_create_standard_format import PageCreateStandardFormat
+from .page_advanced import PageAdvanced
+from .page_basic import PageBasic
 
 

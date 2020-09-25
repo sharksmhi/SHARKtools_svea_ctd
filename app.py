@@ -16,7 +16,8 @@ from plugins.plugin_app import PluginApp
 ALL_PAGES = dict()
 ALL_PAGES['PageStart'] = gui.PageStart
 ALL_PAGES['PageUser'] = gui.PageUser
-ALL_PAGES['PageCreateStandardFormat'] = gui.PageCreateStandardFormat
+ALL_PAGES['PageBasic'] = gui.PageBasic
+ALL_PAGES['PageAdvanced'] = gui.PageAdvanced
 
 APP_TO_PAGE = dict()
 for page_name, page in ALL_PAGES.items():
@@ -68,7 +69,7 @@ class App(PluginApp):
         self.startup_pages()
 
         self.page_history = ['PageUser']
-        self.show_frame('PageCreateStandardFormat')
+        self.show_frame('PageStart')
 
         self.update_all()
 
