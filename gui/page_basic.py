@@ -177,6 +177,13 @@ class PageBasic(tk.Frame):
                        pady=5,
                        sticky='w')
 
+        self.combobox_vis = tkw.ComboboxWidget(frame, title='vis', items=['deep_vis', 'smhi_vis'])
+
+        self.button_run_bokeh_server = tk.Button(frame, text='Visualisera i webbrowser (QC)',
+                                                 command=self._callback_run_bokeh_server)
+        self.button_run_bokeh_server.grid(row=1, column=0, **padding)
+        self.lockable_buttons.append(self.button_run_bokeh_server)
+
     def _build_frame_other(self, frame):
         padding = dict(padx=10,
                        pady=5,
@@ -400,6 +407,21 @@ class PageBasic(tk.Frame):
             if DEBUG:
                 raise e
             return
+
+    def _callback_run_bokeh_server(self):
+
+        self.svea_controller.bokeh_visualize_setting = self.combobox_vis.get_value()
+        # venv
+        venv_path = Path(Path(__file__).parent.parent.parent.parent.parent, 'venv_py36_sharktools')
+        if not venv_path.exists():
+            venv_path = None
+        # server_directory
+        server_directory = Path(Path(__file__).parent.parent.parent.parent)
+
+        self.svea_controller.open_visual_qc(server_file_directory=server_directory,
+                                            venv_path=venv_path,
+                                            # month_list=[4, 5, 6],
+                                            )
 
     def update_page(self):
         self.user = self.user_manager.user
