@@ -122,10 +122,19 @@ class PageBasic(tk.Frame):
         self.stringvars['standard_files_dir_info'] = tk.StringVar()
         tk.Label(frame, textvariable=self.stringvars['standard_files_dir_info']).grid(row=3, column=2, **padding)
 
-        self.lockable_buttons.append(self.buttons['set_working_dir'])
+        self.buttons['set_qc_dir'] = tk.Button(frame, text='QC filer',
+                                                    command=self._set_qc_files_directory)
+        self.buttons['set_qc_dir'].grid(row=4, column=0, **padd)
+        self.stringvars['qc_dir'] = tk.StringVar()
+        tk.Label(frame, textvariable=self.stringvars['qc_dir']).grid(row=4, column=1, **padding)
+        self.stringvars['qc_dir_info'] = tk.StringVar()
+        tk.Label(frame, textvariable=self.stringvars['qc_dir_info']).grid(row=4, column=2, **padding)
+
+        # self.lockable_buttons.append(self.buttons['set_working_dir'])
         self.lockable_buttons.append(self.buttons['set_raw_dir'])
         self.lockable_buttons.append(self.buttons['set_cnv_dir'])
         self.lockable_buttons.append(self.buttons['set_standard_dir'])
+        self.lockable_buttons.append(self.buttons['set_qc_dir'])
 
     def _build_frame_options(self, frame):
         padding = dict(padx=10,
@@ -190,9 +199,12 @@ class PageBasic(tk.Frame):
                        sticky='w')
 
     def _set_working_directory(self, directory=None):
+        old_dir = self.stringvars['working_dir'].get()
         if directory is None:
             directory = filedialog.askdirectory(initialdir=self.stringvars['working_dir'].get())
         if not directory:
+            return
+        if old_dir == directory:
             return
 
         if self._is_locked():
@@ -253,6 +265,16 @@ class PageBasic(tk.Frame):
         self._save_user_settings()
         self._update_svea_paths('standard_files_dir')
 
+    def _set_qc_files_directory(self, directory=None):
+        if directory is None:
+            directory = filedialog.askdirectory(initialdir=self.stringvars['standard_f_dir'].get())
+        if not directory:
+            return
+        self.stringvars['qc_dir'].set(directory)
+        self.stringvars['qc_dir_info'].set(get_directory_info(directory))
+        self._save_user_settings()
+        self._update_svea_paths('qc_dir')
+
     def _update_svea_paths(self, _id=None):
         def none_if_empty(item):
             if item == '':
@@ -274,6 +296,7 @@ class PageBasic(tk.Frame):
         self.stringvars['raw_files_dir_info'].set(get_directory_info(self.stringvars['raw_files_dir'].get()))
         self.stringvars['cnv_files_dir_info'].set(get_directory_info(self.stringvars['cnv_files_dir'].get()))
         self.stringvars['standard_files_dir_info'].set(get_directory_info(self.stringvars['standard_files_dir'].get()))
+        self.stringvars['qc_dir_info'].set(get_directory_info(self.stringvars['qc_dir'].get()))
 
     def _toggle_overwrite(self, *args, **kwargs):
         overwrite = self.booleanvar_allow_overwrite.get()
