@@ -10,6 +10,7 @@ import traceback
 from pathlib import Path
 from tkinter import ttk, filedialog, messagebox
 from svea import SveaController
+from ctd_processing import exceptions as ctd_exeptions
 
 import sharkpylib
 from sharkpylib.tklib import tkinter_widgets as tkw
@@ -49,6 +50,7 @@ class PageBasic(tk.Frame):
         self.set_svea_paths['standard_files_dir'] = self.svea_controller.set_path_standard_format_files
 
         self._build()
+        self._load_user_setting()
 
     def _build(self):
         padding = dict(padx=15,
@@ -168,6 +170,7 @@ class PageBasic(tk.Frame):
                 intvar = tk.IntVar()
                 tk.Checkbutton(frame, text=text, variable=intvar).grid(row=r, column=1, **padding)
                 self.ctd_processing_option_widgets[text] = intvar
+                intvar.set(1)
             elif type(opt) == list:
                 tk.Label(frame, text=text).grid(row=r, column=0, **padding)
                 comb = tkw.ComboboxWidget(frame, items=opt, prop_combobox=dict(width=30), row=r, column=1, **padding)
@@ -416,7 +419,7 @@ class PageBasic(tk.Frame):
 
         for text, opt in self.ctd_processing_option_widgets.items():
             try:
-                opt.set(self.user.basic_options.set(text))
+                opt.set(self.user.basic_options.get(text))
             except:
                 pass
 
@@ -434,17 +437,24 @@ class PageBasic(tk.Frame):
                 options[key] = opt.get()
             options['root_directory'] = self.stringvars['working_dir'].get()
             self.svea_controller.sbe_processing(file_path, **options)
+        except ctd_exeptions.FileExists as e:
+            messagebox.showerror('Har inte tillstånd att skriva över fil', e)
+            return
         except Exception:
             messagebox.showerror('Internal error', traceback.format_exc())
             return
         self._set_raw_files_directory(self.svea_controller.dirs['raw_files'])
         self._set_cnv_files_directory(self.svea_controller.dirs['cnv_files'])
+        self._save_user_settings()
         if self._is_locked():
             self._highlight_button(self.button_create_metadata)
 
     def _callback_create_metadata_file(self):
         try:
             new_dir = self.svea_controller.create_metadata_file()
+        except ctd_exeptions.FileExists as e:
+            messagebox.showerror('Har inte tillstånd att skriva över fil', e)
+            return
         except Exception:
             messagebox.showerror('Internal error', traceback.format_exc())
             return
@@ -455,6 +465,9 @@ class PageBasic(tk.Frame):
     def _callback_create_standard_format(self):
         try:
             new_dir = self.svea_controller.create_standard_format()
+        except ctd_exeptions.FileExists as e:
+            messagebox.showerror('Har inte tillstånd att skriva över fil', e)
+            return
         except Exception:
             messagebox.showerror('Internal error', traceback.format_exc())
             return
@@ -464,7 +477,8 @@ class PageBasic(tk.Frame):
 
     def _callback_run_automatic_qc(self):
         try:
-            self.svea_controller.perform_automatic_qc()
+            new_dir = self.svea_controller.perform_automatic_qc()
+            self._set_qc_files_directory(new_dir)
         except Exception:
             messagebox.showerror('Internal error', traceback.format_exc())
             return
