@@ -434,10 +434,8 @@ class PageBasic(tk.Frame):
                 options[key] = opt.get()
             options['root_directory'] = self.stringvars['working_dir'].get()
             self.svea_controller.sbe_processing(file_path, **options)
-        except Exception as e:
+        except Exception:
             messagebox.showerror('Internal error', traceback.format_exc())
-            if DEBUG:
-                raise e
             return
         self._set_raw_files_directory(self.svea_controller.dirs['raw_files'])
         self._set_cnv_files_directory(self.svea_controller.dirs['cnv_files'])
@@ -447,10 +445,8 @@ class PageBasic(tk.Frame):
     def _callback_create_metadata_file(self):
         try:
             new_dir = self.svea_controller.create_metadata_file()
-        except Exception as e:
+        except Exception:
             messagebox.showerror('Internal error', traceback.format_exc())
-            if DEBUG:
-                raise e
             return
         self._set_cnv_files_directory(new_dir)
         if self._is_locked():
@@ -459,10 +455,8 @@ class PageBasic(tk.Frame):
     def _callback_create_standard_format(self):
         try:
             new_dir = self.svea_controller.create_standard_format()
-        except Exception as e:
-            messagebox.showerror('Internal error', e)
-            if DEBUG:
-                raise e
+        except Exception:
+            messagebox.showerror('Internal error', traceback.format_exc())
             return
         self._set_standard_files_directory(new_dir)
         if self._is_locked():
@@ -471,26 +465,27 @@ class PageBasic(tk.Frame):
     def _callback_run_automatic_qc(self):
         try:
             self.svea_controller.perform_automatic_qc()
-        except Exception as e:
-            messagebox.showerror('Internal error', e)
-            if DEBUG:
-                raise e
+        except Exception:
+            messagebox.showerror('Internal error', traceback.format_exc())
             return
 
     def _callback_run_bokeh_server(self):
+        try:
+            self.svea_controller.bokeh_visualize_setting = self.combobox_vis.get_value()
+            # venv
+            venv_path = Path(Path(__file__).parent.parent.parent.parent.parent, 'venv_py36_sharktools')
+            if not venv_path.exists():
+                venv_path = None
+            # server_directory
+            server_directory = Path(Path(__file__).parent.parent.parent.parent)
 
-        self.svea_controller.bokeh_visualize_setting = self.combobox_vis.get_value()
-        # venv
-        venv_path = Path(Path(__file__).parent.parent.parent.parent.parent, 'venv_py36_sharktools')
-        if not venv_path.exists():
-            venv_path = None
-        # server_directory
-        server_directory = Path(Path(__file__).parent.parent.parent.parent)
-
-        self.svea_controller.open_visual_qc(server_file_directory=server_directory,
-                                            venv_path=venv_path,
-                                            # month_list=[4, 5, 6],
-                                            )
+            self.svea_controller.open_visual_qc(server_file_directory=server_directory,
+                                                venv_path=venv_path,
+                                                # month_list=[4, 5, 6],
+                                                )
+        except Exception:
+            messagebox.showerror('Internal error', traceback.format_exc())
+            return
 
     def update_page(self):
         self.user = self.user_manager.user
