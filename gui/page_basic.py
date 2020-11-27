@@ -421,13 +421,13 @@ class PageBasic(tk.Frame):
             try:
                 opt.set(self.user.basic_options.get(text))
             except:
-                pass
+                self.logger.debug(f'Cant set user setting: {text}')
 
     def _highlight_button(self, button_ref):
         self._reset_button_color()
         self._lock_buttons()
         button_ref.configure(state='normal')
-        button_ref.configure(bg='darkgreen')
+        button_ref.configure(bg='green')
 
     def _callback_run_seb_processing(self):
         try:
@@ -439,9 +439,11 @@ class PageBasic(tk.Frame):
             self.svea_controller.sbe_processing(file_path, **options)
         except ctd_exeptions.FileExists as e:
             messagebox.showerror('Har inte tillstånd att skriva över fil', e)
+            self.logger.warning(self.logger.error(traceback.format_exc()))
             return
         except Exception:
             messagebox.showerror('Internal error', traceback.format_exc())
+            self.logger.error(traceback.format_exc())
             return
         self._set_raw_files_directory(self.svea_controller.dirs['raw_files'])
         self._set_cnv_files_directory(self.svea_controller.dirs['cnv_files'])
@@ -457,6 +459,7 @@ class PageBasic(tk.Frame):
             return
         except Exception:
             messagebox.showerror('Internal error', traceback.format_exc())
+            self.logger.error(traceback.format_exc())
             return
         self._set_cnv_files_directory(new_dir)
         if self._is_locked():
@@ -470,6 +473,7 @@ class PageBasic(tk.Frame):
             return
         except Exception:
             messagebox.showerror('Internal error', traceback.format_exc())
+            self.logger.error(traceback.format_exc())
             return
         self._set_standard_files_directory(new_dir)
         if self._is_locked():
@@ -481,6 +485,7 @@ class PageBasic(tk.Frame):
             self._set_qc_files_directory(new_dir)
         except Exception:
             messagebox.showerror('Internal error', traceback.format_exc())
+            self.logger.error(traceback.format_exc())
             return
 
     def _callback_run_bokeh_server(self):
@@ -499,6 +504,7 @@ class PageBasic(tk.Frame):
                                                 )
         except Exception:
             messagebox.showerror('Internal error', traceback.format_exc())
+            self.logger.error(traceback.format_exc())
             return
 
     def update_page(self):
@@ -510,7 +516,6 @@ class PageBasic(tk.Frame):
         self._toggle_unlock_selections()
 
         self._update_svea_paths()
-        print('WORKING DIRECTORY', self.svea_controller.working_directory)
 
     def _raw_files_are_present(self):
         if 'btl' in self.stringvars['raw_files_dir_info'].get():
