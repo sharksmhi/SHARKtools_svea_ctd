@@ -6,11 +6,14 @@
 import datetime
 import os
 import tkinter as tk
+import traceback
 from pathlib import Path
 from tkinter import ttk, filedialog, messagebox
 from svea import SveaController
 
+import sharkpylib
 from sharkpylib.tklib import tkinter_widgets as tkw
+from sharkpylib.file import Directory
 
 DEBUG = True
 
@@ -31,6 +34,7 @@ class PageBasic(tk.Frame):
         self.buttons = {}
         self.stringvars = {}
         self.set_svea_paths = {}
+        self.raw_files = None
 
     def startup(self):
         """
@@ -153,8 +157,25 @@ class PageBasic(tk.Frame):
         padding = dict(padx=10,
                        pady=5,
                        sticky='w')
+        r = 0
+        self.combobox_raw_files = tkw.ComboboxWidget(frame, prop_combobox=dict(width=40), row=r, column=0, columnspan=2, **padding)
+        r += 1
+        self.ctd_processing_option_widgets = {}
+        for text, opt in self.svea_controller.ctd_processing_options.items():
+            if text in ['overwrite', 'root_directory']:
+                continue
+            if opt == bool:
+                intvar = tk.IntVar()
+                tk.Checkbutton(frame, text=text, variable=intvar).grid(row=r, column=1, **padding)
+                self.ctd_processing_option_widgets[text] = intvar
+            elif type(opt) == list:
+                tk.Label(frame, text=text).grid(row=r, column=0, **padding)
+                comb = tkw.ComboboxWidget(frame, items=opt, prop_combobox=dict(width=30), row=r, column=1, **padding)
+                self.ctd_processing_option_widgets[text] = comb
+            r += 1
+
         self.button_run_processing = tk.Button(frame, text='Kör processering', command=self._callback_run_seb_processing)
-        self.button_run_processing.grid(row=0, column=0, **padding)
+        self.button_run_processing.grid(row=r, column=0, **padding)
         self.lockable_buttons.append(self.button_run_processing)
 
     def _build_frame_create_meatadata_file(self, frame):
@@ -236,6 +257,8 @@ class PageBasic(tk.Frame):
         if not d:
             self._save_user_settings()
 
+        self._update_frame_seb_processing()
+
         if self._is_locked():
             if not self._raw_files_are_present():
                 self._highlight_button(self.buttons['set_raw_dir'])
@@ -274,6 +297,14 @@ class PageBasic(tk.Frame):
         self.stringvars['qc_dir_info'].set(get_directory_info(directory))
         self._save_user_settings()
         self._update_svea_paths('qc_dir')
+
+    def _update_frame_seb_processing(self):
+        d = self.stringvars['raw_files_dir'].get()
+        if not d:
+            self.combobox_raw_files.update_items([])
+            return
+        self.raw_files = Directory(d, file_type='hdr')
+        self.combobox_raw_files.update_items(self.raw_files.get_list())
 
     def _update_svea_paths(self, _id=None):
         def none_if_empty(item):
@@ -371,6 +402,9 @@ class PageBasic(tk.Frame):
         self.user.basic_options.set('overwrite', self.booleanvar_allow_overwrite.get())
         self.user.basic_options.set('unlock_selections', self.booleanvar_unlock_selections.get())
 
+        for text, opt in self.ctd_processing_option_widgets.items():
+            self.user.basic_options.set(text, opt.get())
+
     def _load_user_setting(self):
         self.stringvars['working_dir'].set(self.user.basic_dirs.setdefault('working', ''))
         self.stringvars['raw_files_dir'].set(self.user.basic_dirs.setdefault('raw_files', ''))
@@ -380,6 +414,12 @@ class PageBasic(tk.Frame):
         self.booleanvar_allow_overwrite.set(self.user.basic_options.setdefault('overwrite', False))
         self.booleanvar_unlock_selections.set(self.user.basic_options.setdefault('unlock_selections', False))
 
+        for text, opt in self.ctd_processing_option_widgets.items():
+            try:
+                opt.set(self.user.basic_options.set(text))
+            except:
+                pass
+
     def _highlight_button(self, button_ref):
         self._reset_button_color()
         self._lock_buttons()
@@ -388,13 +428,19 @@ class PageBasic(tk.Frame):
 
     def _callback_run_seb_processing(self):
         try:
-            new_dir = self.svea_controller.sbe_processing()
+            file_path = self.raw_files.get_path(self.combobox_raw_files.get())
+            options = {}
+            for key, opt in self.ctd_processing_option_widgets.items():
+                options[key] = opt.get()
+            options['root_directory'] = self.stringvars['working_dir'].get()
+            self.svea_controller.sbe_processing(file_path, **options)
         except Exception as e:
-            messagebox.showerror('Internal error', e)
+            messagebox.showerror('Internal error', traceback.format_exc())
             if DEBUG:
                 raise e
             return
-        self._set_raw_files_directory(new_dir)
+        self._set_raw_files_directory(self.svea_controller.dirs['raw_files'])
+        self._set_cnv_files_directory(self.svea_controller.dirs['cnv_files'])
         if self._is_locked():
             self._highlight_button(self.button_create_metadata)
 
@@ -402,7 +448,7 @@ class PageBasic(tk.Frame):
         try:
             new_dir = self.svea_controller.create_metadata_file()
         except Exception as e:
-            messagebox.showerror('Internal error', e)
+            messagebox.showerror('Internal error', traceback.format_exc())
             if DEBUG:
                 raise e
             return
@@ -449,6 +495,7 @@ class PageBasic(tk.Frame):
     def update_page(self):
         self.user = self.user_manager.user
         self._load_user_setting()
+        self._update_frame_seb_processing()
 
         self._toggle_overwrite()
         self._toggle_unlock_selections()
