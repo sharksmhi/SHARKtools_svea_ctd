@@ -167,10 +167,10 @@ class PageBasic(tk.Frame):
             if text in ['overwrite', 'root_directory']:
                 continue
             if opt == bool:
-                intvar = tk.IntVar()
-                tk.Checkbutton(frame, text=text, variable=intvar).grid(row=r, column=1, **padding)
-                self.ctd_processing_option_widgets[text] = intvar
-                intvar.set(1)
+                boolvar = tk.BooleanVar()
+                tk.Checkbutton(frame, text=text, variable=boolvar).grid(row=r, column=1, **padding)
+                boolvar.set(True)
+                self.ctd_processing_option_widgets[text] = boolvar
             elif type(opt) == list:
                 tk.Label(frame, text=text).grid(row=r, column=0, **padding)
                 comb = tkw.ComboboxWidget(frame, items=opt, prop_combobox=dict(width=30), row=r, column=1, **padding)
@@ -406,6 +406,7 @@ class PageBasic(tk.Frame):
         self.user.basic_options.set('unlock_selections', self.booleanvar_unlock_selections.get())
 
         for text, opt in self.ctd_processing_option_widgets.items():
+            # print('OPT', text, opt.get())
             self.user.basic_options.set(text, opt.get())
 
     def _load_user_setting(self):
