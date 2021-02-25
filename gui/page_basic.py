@@ -37,6 +37,8 @@ class PageBasic(tk.Frame):
         self.set_svea_paths = {}
         self.raw_files = None
 
+        self.venv_path = Path(Path(__file__).parent.parent.parent.parent.parent, 'venv')
+
     def startup(self):
         """
 
@@ -48,6 +50,7 @@ class PageBasic(tk.Frame):
         self.set_svea_paths['raw_files_dir'] = self.svea_controller.set_path_raw_files
         self.set_svea_paths['cnv_files_dir'] = self.svea_controller.set_path_cnv_files
         self.set_svea_paths['standard_files_dir'] = self.svea_controller.set_path_standard_format_files
+        self.set_svea_paths['qc_dir'] = self.svea_controller.set_path_standard_format_files_qc
 
         self._build()
         self._load_user_setting()
@@ -128,7 +131,7 @@ class PageBasic(tk.Frame):
         self.stringvars['standard_files_dir_info'] = tk.StringVar()
         tk.Label(frame, textvariable=self.stringvars['standard_files_dir_info']).grid(row=3, column=2, **padding)
 
-        self.buttons['set_qc_dir'] = tk.Button(frame, text='QC filer',
+        self.buttons['set_qc_dir'] = tk.Button(frame, text='Automatiskt QC:ade filer',
                                                     command=self._set_qc_files_directory)
         self.buttons['set_qc_dir'].grid(row=4, column=0, **padd)
         self.stringvars['qc_dir'] = tk.StringVar()
@@ -212,9 +215,19 @@ class PageBasic(tk.Frame):
 
         self.combobox_vis = tkw.ComboboxWidget(frame, title='vis', items=['deep_vis', 'smhi_vis'])
 
+        self.buttons['set_bokeh_venv_path'] = tk.Button(frame, text='Sökväg till bokeh venv', command=self._set_bokeh_venv_path)
+        self.buttons['set_bokeh_venv_path'].grid(row=1, column=0, **padding)
+        self.stringvars['bokeh_venv_path'] = tk.StringVar()
+        tk.Label(frame, textvariable=self.stringvars['bokeh_venv_path']).grid(row=1, column=1, **padding)
+        
+        self.buttons['set_shark_package_root'] = tk.Button(frame, text='Sökväg till shark-paket', command=self._set_shark_package_root)
+        self.buttons['set_shark_package_root'].grid(row=2, column=0, **padding)
+        self.stringvars['shark_package_root'] = tk.StringVar()
+        tk.Label(frame, textvariable=self.stringvars['shark_package_root']).grid(row=2, column=1, **padding)
+
         self.button_run_bokeh_server = tk.Button(frame, text='Visualisera i webbrowser (QC)',
                                                  command=self._callback_run_bokeh_server)
-        self.button_run_bokeh_server.grid(row=1, column=0, **padding)
+        self.button_run_bokeh_server.grid(row=3, column=0, columnspan=2, **padding)
         self.lockable_buttons.append(self.button_run_bokeh_server)
 
     def _build_frame_other(self, frame):
@@ -266,7 +279,7 @@ class PageBasic(tk.Frame):
             if not self._raw_files_are_present():
                 self._highlight_button(self.buttons['set_raw_dir'])
             else:
-                self._highlight_button(self.button_run_processing)
+                self._highlight_button(self.buttons['set_raw_dir'], self.button_run_processing)
 
     def _set_cnv_files_directory(self, directory=None):
         d = directory
@@ -293,13 +306,28 @@ class PageBasic(tk.Frame):
 
     def _set_qc_files_directory(self, directory=None):
         if directory is None:
-            directory = filedialog.askdirectory(initialdir=self.stringvars['standard_f_dir'].get())
+            directory = filedialog.askdirectory(initialdir=self.stringvars['standard_files_dir'].get())
         if not directory:
             return
         self.stringvars['qc_dir'].set(directory)
         self.stringvars['qc_dir_info'].set(get_directory_info(directory))
         self._save_user_settings()
-        self._update_svea_paths('qc_dir')
+        
+    def _set_bokeh_venv_path(self, directory=None):
+        if directory is None:
+            directory = filedialog.askdirectory(initialdir=self.stringvars['bokeh_venv_path'].get())
+        if not directory:
+            return
+        self.stringvars['bokeh_venv_path'].set(directory)
+        self._save_user_settings()
+
+    def _set_shark_package_root(self, directory=None):
+        if directory is None:
+            directory = filedialog.askdirectory(initialdir=self.stringvars['shark_package_root'].get())
+        if not directory:
+            return
+        self.stringvars['shark_package_root'].set(directory)
+        self._save_user_settings()
 
     def _update_frame_seb_processing(self):
         d = self.stringvars['raw_files_dir'].get()
@@ -381,6 +409,8 @@ class PageBasic(tk.Frame):
 
     def _reset_paths_on_lock_selection(self):
         for key, value in self.stringvars.items():
+            if key in ['shark_package_root', 'bokeh_venv_path']:
+                continue
             value.set('')
 
         self._reset_paths_in_svea_controller()
@@ -401,9 +431,13 @@ class PageBasic(tk.Frame):
         self.user.basic_dirs.set('raw_files', self.stringvars['raw_files_dir'].get())
         self.user.basic_dirs.set('cnv_files', self.stringvars['cnv_files_dir'].get())
         self.user.basic_dirs.set('standard_files', self.stringvars['standard_files_dir'].get())
+        self.user.basic_dirs.set('qc_dir', self.stringvars['qc_dir'].get())
+        self.user.basic_dirs.set('shark_package_root', self.stringvars['shark_package_root'].get())
+        self.user.basic_dirs.set('bokeh_venv_path', self.stringvars['bokeh_venv_path'].get())
 
         self.user.basic_options.set('overwrite', self.booleanvar_allow_overwrite.get())
         self.user.basic_options.set('unlock_selections', self.booleanvar_unlock_selections.get())
+        self.user.basic_options.set('vis', self.combobox_vis.get())
 
         for text, opt in self.ctd_processing_option_widgets.items():
             # print('OPT', text, opt.get())
@@ -414,9 +448,30 @@ class PageBasic(tk.Frame):
         self.stringvars['raw_files_dir'].set(self.user.basic_dirs.setdefault('raw_files', ''))
         self.stringvars['cnv_files_dir'].set(self.user.basic_dirs.setdefault('cnv_files', ''))
         self.stringvars['standard_files_dir'].set(self.user.basic_dirs.setdefault('standard_files', ''))
+        self.stringvars['qc_dir'].set(self.user.basic_dirs.setdefault('qc_dir', ''))
+        self.stringvars['shark_package_root'].set(self.user.basic_dirs.setdefault('shark_package_root', ''))
+        self.stringvars['bokeh_venv_path'].set(self.user.basic_dirs.setdefault('bokeh_venv_path', ''))
+
+        package_root = ''
+        check_path = Path(__file__).parent.parent.parent.parent
+        for path in check_path.iterdir():
+            if path.name == 'venv':
+                package_root = str(check_path)
+                break
+        self.stringvars['bokeh_venv_path'].set(self.user.basic_dirs.setdefault('bokeh_venv_path', package_root))
+
+        package_root = ''
+        check_path = Path(__file__).parent.parent.parent.parent
+        for path in check_path.iterdir():
+            if path.name == 'ctdvis':
+                package_root = str(check_path)
+                break
+
+        self.stringvars['shark_package_root'].set(self.user.basic_dirs.setdefault('shark_package_root', package_root))
 
         self.booleanvar_allow_overwrite.set(self.user.basic_options.setdefault('overwrite', False))
         self.booleanvar_unlock_selections.set(self.user.basic_options.setdefault('unlock_selections', False))
+        self.combobox_vis.set(self.user.basic_options.setdefault('vis', self.combobox_vis.values))
 
         for text, opt in self.ctd_processing_option_widgets.items():
             try:
@@ -424,11 +479,15 @@ class PageBasic(tk.Frame):
             except:
                 self.logger.debug(f'Cant set user setting: {text}')
 
-    def _highlight_button(self, button_ref):
+    def _highlight_button(self, *args):
         self._reset_button_color()
         self._lock_buttons()
-        button_ref.configure(state='normal')
-        button_ref.configure(bg='green')
+        self.buttons['set_working_dir'].configure(state='normal')
+        # self.buttons['set_working_dir'].configure(bg='green')
+        if self.stringvars['working_dir'].get():
+            for button in args:
+                button.configure(state='normal')
+                button.configure(bg='green')
 
     def _callback_run_seb_processing(self):
         try:
@@ -455,6 +514,8 @@ class PageBasic(tk.Frame):
     def _callback_create_metadata_file(self):
         try:
             new_dir = self.svea_controller.create_metadata_file()
+        except Exception as e:
+            raise e
         except ctd_exeptions.FileExists as e:
             messagebox.showerror('Har inte tillstånd att skriva över fil', e)
             return
@@ -483,29 +544,29 @@ class PageBasic(tk.Frame):
     def _callback_run_automatic_qc(self):
         try:
             new_dir = self.svea_controller.perform_automatic_qc()
-            self._set_qc_files_directory(new_dir)
         except Exception:
             messagebox.showerror('Internal error', traceback.format_exc())
             self.logger.error(traceback.format_exc())
             return
+        self._set_qc_files_directory(new_dir)
+        if self._is_locked():
+            self._highlight_button(self.button_run_bokeh_server)
 
     def _callback_run_bokeh_server(self):
         try:
             self.svea_controller.bokeh_visualize_setting = self.combobox_vis.get_value()
-            # venv
-            venv_path = Path(Path(__file__).parent.parent.parent.parent.parent, 'venv_py36_sharktools')
-            if not venv_path.exists():
-                venv_path = None
             # server_directory
-            server_directory = Path(Path(__file__).parent.parent.parent.parent)
+            server_directory = Path(Path(__file__).parent.parent, 'bokeh_server')
 
             self.svea_controller.open_visual_qc(server_file_directory=server_directory,
-                                                venv_path=venv_path,
+                                                venv_path=self.stringvars['bokeh_venv_path'].get(), 
+                                                shark_package_root=self.stringvars['shark_package_root'].get()
                                                 # month_list=[4, 5, 6],
                                                 )
         except Exception:
             messagebox.showerror('Internal error', traceback.format_exc())
             self.logger.error(traceback.format_exc())
+            raise
             return
 
     def update_page(self):
@@ -513,10 +574,10 @@ class PageBasic(tk.Frame):
         self._load_user_setting()
         self._update_frame_seb_processing()
 
+        self._update_svea_paths()
+
         self._toggle_overwrite()
         self._toggle_unlock_selections()
-
-        self._update_svea_paths()
 
     def _raw_files_are_present(self):
         if 'btl' in self.stringvars['raw_files_dir_info'].get():
