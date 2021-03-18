@@ -73,6 +73,14 @@ class App(PluginApp):
 
         self.update_all()
 
+    def close(self):
+        for page_name, frame in self.frames.items():
+            if self.pages_started.get(page_name):
+                try:
+                    frame.close()
+                except:
+                    pass
+
     def update_page(self):
         self.update_all()
 

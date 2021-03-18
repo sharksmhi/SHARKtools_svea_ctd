@@ -55,6 +55,9 @@ class PageBasic(tk.Frame):
         self._build()
         self._load_user_setting()
 
+    def close(self):
+        self.svea_controller.close_visual_qc()
+
     def _build(self):
         padding = dict(padx=15,
                        pady=15)
@@ -566,7 +569,6 @@ class PageBasic(tk.Frame):
         except Exception:
             messagebox.showerror('Internal error', traceback.format_exc())
             self.logger.error(traceback.format_exc())
-            raise
             return
 
     def update_page(self):
